@@ -55,7 +55,7 @@ for (const file of eventFiles) {
 client.login(config.token);
 
 let ircClient = new irc.Client(config.ircServer, config.ircUserName, {
-    channels: ['#test2'],
+    channels: config.ircChannels,
     autoConnect: false,
     port: config.ircPort,
     userName: config.ircUserName,
@@ -66,7 +66,7 @@ let ircClient = new irc.Client(config.ircServer, config.ircUserName, {
 });
 ircClient.connect();
 ircClient.on('raw', (message) => {
-    dbg(`IRC raw: ${message}`);
+    dbg(`IRC raw: ${message.rawCommand}`);
 });
 ircClient.on('message', (from, to, message) => {
     dbg(`IRC message: ${from} => ${to}: ${message}`);
