@@ -1,0 +1,21 @@
+{
+  "name": "irc-discord-bridge",
+  "version": "1.0.0",
+  "description": "IRC to Discord bridge",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "repository": "git+ssh://git@github.com/cheezedoodle2/irc-discord-bridge.git",
+  "author": "cheezedoodle2 <cheezedoodle2@users.noreply.github.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cheezedoodle2/irc-discord-bridge/issues"
+  },
+  "homepage": "https://github.com/cheezedoodle2/irc-discord-bridge#readme",
+  "dependencies": {
+    "discord.js": "^14.11.0",
+    "matrix-org-irc": "^2.0.1",
+    "yarn": "^1.22.19"
+  }
+}

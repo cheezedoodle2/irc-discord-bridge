@@ -1,0 +1,12 @@
+{
+    "token": "bot token",
+    "clientId": "client or app ID",
+    "logChannelId": "log channel id",
+    "intents": [
+        "Guilds"
+    ],
+    "ircUserName": "irc user name",
+    "ircRealName": "irc real name",
+    "ircPort": "irc port",
+    "ircServer": "irc.irc.net"
+}
