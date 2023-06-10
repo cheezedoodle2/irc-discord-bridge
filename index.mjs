@@ -71,5 +71,5 @@ ircClient.on('raw', (message) => {
 ircClient.on('message', (from, to, message) => {
     dbg(`IRC message: ${from} => ${to}: ${message}`);
     let channel = client.channels.cache.find(channel => channel.id === config.logChannelId);
-    channel.send(`${to} <${from}> ${message}`);
+    channel.send(`**${to}** <\`${from}\`> ${message}`);
 });
