@@ -68,8 +68,29 @@ ircClient.connect();
 ircClient.on('raw', (message) => {
     dbg(`IRC raw: ${message.rawCommand}`);
 });
-ircClient.on('message', (from, to, message) => {
+
+// { channel: username }
+let lastIRCUsernames = {};
+// { channel: message }
+let lastEmbedMessageHandles = {};
+ircClient.on('message', async (from, to, message) => {
     dbg(`IRC message: ${from} => ${to}: ${message}`);
     let channel = client.channels.cache.find(channel => channel.id === config.logChannelId);
     channel.send(`**${to}** <\`${from}\`> ${message}`);
+    if(lastIRCUsernames[to] == from) {
+        message += `\n${lastEmbedMessageHandles[to].embeds[0].description}`;
+    }
+    const embed = {
+        "type": "rich",
+        "title": `${to}`,
+        "description": `${message}`,
+        "color": 0x289191,
+        "author": {
+            "name": `${from}`
+        }
+    };
+
+    let messageHandle = await channel.send({embeds: [embed]});
+    lastIRCUsernames[to] = from;
+    lastEmbedMessageHandles[to] = messageHandle;
 });
