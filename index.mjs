@@ -76,9 +76,12 @@ let lastEmbedMessageHandles = {};
 ircClient.on('message', async (from, to, message) => {
     dbg(`IRC message: ${from} => ${to}: ${message}`);
     let channel = client.channels.cache.find(channel => channel.id === config.logChannelId);
-    channel.send(`**${to}** <\`${from}\`> ${message}`);
+    if(config.discordMessageStyle == 'text') {
+        channel.send(`**${to}** <\`${from}\`> ${message}`);
+        return;
+    }
     if(lastIRCUsernames[to] == from) {
-        message += `\n${lastEmbedMessageHandles[to].embeds[0].description}`;
+        message = `${lastEmbedMessageHandles[to].embeds[0].description}\n${message}`;
     }
     const embed = {
         "type": "rich",
@@ -89,8 +92,13 @@ ircClient.on('message', async (from, to, message) => {
             "name": `${to}`
         }
     };
-
-    let messageHandle = await channel.send({embeds: [embed]});
+    let messageHandle = null;
+    if(lastIRCUsernames[to] == from) {
+        lastEmbedMessageHandles[to].edit({embeds: [embed]});
+    }
+    else {
+        messageHandle = await channel.send({embeds: [embed]});
+        lastEmbedMessageHandles[to] = messageHandle;
+    }
     lastIRCUsernames[to] = from;
-    lastEmbedMessageHandles[to] = messageHandle;
 });
