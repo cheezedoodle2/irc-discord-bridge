@@ -82,11 +82,11 @@ ircClient.on('message', async (from, to, message) => {
     }
     const embed = {
         "type": "rich",
-        "title": `${to}`,
+        "title": `${from}`,
         "description": `${message}`,
         "color": 0x289191,
         "author": {
-            "name": `${from}`
+            "name": `${to}`
         }
     };
 
