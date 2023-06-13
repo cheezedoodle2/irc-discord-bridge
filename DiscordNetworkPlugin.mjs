@@ -135,6 +135,9 @@ export default class DiscordNetworkPlugin {
         if(this.lastUsernames[to] == from) {
             message = `${this.lastEmbedMessageHandles[to].embeds[0].description}\n${message}`;
         }
+
+        const linkRegex = /(https?:\/\/[^\s]+)/g;
+        const links = message.match(linkRegex);
         const embed = {
             "type": "rich",
             "title": `${from}`,
@@ -153,6 +156,9 @@ export default class DiscordNetworkPlugin {
             this.lastEmbedMessageHandles[to] = messageHandle;
         }
         this.lastUsernames[to] = from;
+        for(let link of links) {
+            channel.send(`${from} ${link}`);
+        }
     }
 
     async initialize() {
