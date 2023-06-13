@@ -1,104 +1,22 @@
-import fs from "node:fs";
-import path from 'node:path';
-import irc from 'matrix-org-irc';
-import { Client, GatewayIntentBits, Collection } from "discord.js";
-import './util.mjs';
+import { bot } from './util.mjs';
+// TODO dump these in a directory and find them
+import DiscordNetworkPlugin from './DiscordNetworkPlugin.mjs';
+import IRCNetworkPlugin from './IRCNetworkPlugin.mjs';
 
-const configFile = fs.readFileSync("config.json", "utf8");
-const config = JSON.parse(configFile);
-
-let intents = [];
-for(const intent of config.intents) {
-    if(! intent in GatewayIntentBits) {
-        console.error(`Invalid intent: ${intent}`);
-        process.exit(1);
-    }
-    intents.push(GatewayIntentBits[intent]);
-}
-const client = new Client({ 
-    intents: intents
-});
-
-client.commands = new Collection();
-
-const commandsPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.mjs'));
-
-debugLevel = 1;
-for (const file of commandFiles) {
-    const filePath = path.join(commandsPath, file);
-    dbg(`Loading command file ${filePath}...`);
-    const { command } = await import(filePath);
-    if ('data' in command && 'execute' in command) {
-        client.commands.set(command.data.name, command);
-        dbg(`Loaded command file ${filePath}, name: ${command.data.name}`);
-    } else {
-        console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);
-    }
+function findPlugins() {
+    let discordNetworkPlugin = new DiscordNetworkPlugin(bot, 'config.json');
+    let ircNetworkPlugin = new IRCNetworkPlugin(bot, 'config.json');
+    return [discordNetworkPlugin.initialize(), ircNetworkPlugin.initialize()];
 }
 
-const eventsPath = path.join(path.dirname(new URL(import.meta.url).pathname), 'events');
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith('.mjs'));
-for (const file of eventFiles) {
-    const filePath = path.join(eventsPath, file);
-    dbg(`Loading event file ${filePath}...`);
-    const eventModule = await import(filePath)
-    const { eventName, once, execute } = eventModule;
-    if (once) {
-        client.once(eventName, (...args) => execute(...args));
-    } else {
-        client.on(eventName, (...args) => execute(...args));
-    }
-    dbg(`Loaded event file ${filePath}, eventName: ${eventName}, once: ${once}`);
+function completeStartup(plugins) {
+    console.log(`Loaded ${plugins.length} plugins in ${process.uptime()} seconds\n${plugins.join('\n')}}`); 
 }
 
-client.login(config.token);
-
-let ircClient = new irc.Client(config.ircServer, config.ircUserName, {
-    channels: config.ircChannels,
-    autoConnect: false,
-    port: config.ircPort,
-    userName: config.ircUserName,
-    realName: config.ircRealName,
-    showErrors: true,
-    floodProtection: true,
-    debug: true
-});
-ircClient.connect();
-ircClient.on('raw', (message) => {
-    dbg(`IRC raw: ${message.rawCommand}`);
+bot.events.on(bot.eventNames.NP_CHANNEL_LIST, (pluginName, channelList) => {
+    console.log(`Channel list from plugin ${pluginName}:\n${JSON.stringify(channelList)}`);
 });
 
-// { channel: username }
-let lastIRCUsernames = {};
-// { channel: message }
-let lastEmbedMessageHandles = {};
-ircClient.on('message', async (from, to, message) => {
-    dbg(`IRC message: ${from} => ${to}: ${message}`);
-    let channel = client.channels.cache.find(channel => channel.id === config.logChannelId);
-    if(config.discordMessageStyle == 'text') {
-        channel.send(`**${to}** <\`${from}\`> ${message}`);
-        return;
-    }
-    if(lastIRCUsernames[to] == from) {
-        message = `${lastEmbedMessageHandles[to].embeds[0].description}\n${message}`;
-    }
-    const embed = {
-        "type": "rich",
-        "title": `${from}`,
-        "description": `${message}`,
-        "color": 0x289191,
-        "author": {
-            "name": `${to}`
-        }
-    };
-    let messageHandle = null;
-    if(lastIRCUsernames[to] == from) {
-        lastEmbedMessageHandles[to].edit({embeds: [embed]});
-    }
-    else {
-        messageHandle = await channel.send({embeds: [embed]});
-        lastEmbedMessageHandles[to] = messageHandle;
-    }
-    lastIRCUsernames[to] = from;
-});
+await Promise.all(findPlugins())
+    .then(completeStartup)
+    .catch((err) => { console.error(err); });
