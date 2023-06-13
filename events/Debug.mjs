@@ -1,5 +1,5 @@
 import { Events } from 'discord.js';
-import '../util.mjs';
+import { dbg } from '../util.mjs';
 
 let eventName = Events.Debug;
 let once = false;
