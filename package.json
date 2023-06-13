@@ -2,8 +2,9 @@
   "name": "irc-discord-bridge",
   "version": "1.0.0",
   "description": "IRC to Discord bridge",
-  "main": "index.js",
+  "main": "index.mjs",
   "scripts": {
+    "start": "node ./index.mjs",
     "test": "test"
   },
   "repository": "git+ssh://git@github.com/cheezedoodle2/irc-discord-bridge.git",
@@ -14,8 +15,11 @@
   },
   "homepage": "https://github.com/cheezedoodle2/irc-discord-bridge#readme",
   "dependencies": {
+    "@discordjs/builders": "^1.6.3",
     "discord.js": "^14.11.0",
+    "eslint": "^8.42.0",
     "matrix-org-irc": "^2.0.1",
     "yarn": "^1.22.19"
-  }
+  },
+  "packageManager": "yarn@3.6.0"
 }
