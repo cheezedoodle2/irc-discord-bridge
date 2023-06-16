@@ -48,6 +48,20 @@ export default class IRCNetworkPlugin {
             }
         });
 
+        ircClient.on('join', (channel, nick, message) => {
+            dbg(`IRC JOIN: ${nick} joined ${channel}: ${message}`);
+            dbg(`message`);
+            this.bot.events.emit(this.bot.eventNames.NP_NEW_MESSAGE, this.constructor.name, nick, channel, `${nick} joined ${channel}`);
+        });
+        ircClient.on('nick', (oldnick, newnick, channels, message) => {
+            dbg(`IRC NICK: ${oldnick} -> ${newnick}, ${message}`);
+            this.bot.events.emit(this.bot.eventNames.NP_NEW_MESSAGE, this.constructor.name, 'IRC', 'NICK', `${oldnick} -> ${newnick}`);
+        });
+        ircClient.on('part', (channel, nick, reason, message) => {
+            dbg(`IRC PART: ${nick} parted ${channel}: ${reason}, ${message}`);
+            this.bot.events.emit(this.bot.eventNames.NP_NEW_MESSAGE, this.constructor.name, nick, channel, `${nick} left ${channel}${reason ? ": {reason}" : ""}`);
+        });
+
         ircClient.on('message', async (from, to, message) => {
             dbg(`IRC message: ${from} => ${to}: ${message}`);
             this.bot.events.emit(this.bot.eventNames.NP_NEW_MESSAGE, this.constructor.name, from, to, message);
