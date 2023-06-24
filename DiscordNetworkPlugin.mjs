@@ -4,6 +4,7 @@ import { Client, GatewayIntentBits, Collection, ChannelType } from "discord.js";
 import { GlobalSettings } from './globalSettings.mjs';
 import { ConfigurationError } from './ConfigurationError.mjs';
 import { dbg } from './util.mjs';
+import TrackerRemover from './trackers.mjs';
 
 export default class DiscordNetworkPlugin {
     async loadCommands() {
@@ -135,6 +136,9 @@ export default class DiscordNetworkPlugin {
         const linkRegex = /(https?:\/\/[^\s]+)/g;
         const links = message.match(linkRegex);
 
+        // If the sender of this message is the same as the last sender to this
+        // destination, then we can just edit the last message instead of
+        // sending a new one.
         if(this.lastUsernames[to] == from) {
             message = `${this.lastEmbedMessageHandles[to].embeds[0].description}\n${message}`;
         }
@@ -148,6 +152,7 @@ export default class DiscordNetworkPlugin {
                 "name": `${to}`
             }
         };
+
         let messageHandle = null;
         if(this.lastUsernames[to] == from) {
             this.lastEmbedMessageHandles[to].edit({embeds: [embed]});
@@ -158,9 +163,18 @@ export default class DiscordNetworkPlugin {
         }
         this.lastUsernames[to] = from;
 
+        // See if we had any matches, and if so, remove the trackers
         if(links) {
             for(let link of links) {
-                channel.send(`${from} ${link}`);
+                let bare_url = link;
+
+                try {
+                    bare_url = TrackerRemover.removeTrackersFromUrl(link);
+                }
+                catch(error) {
+                    console.error(`Something went wrong removing trackers from URL:\n  link: ${link}\n  bare_url: ${bare_url}\n${error}`);
+                }
+                channel.send(`${from} ${bare_url}`);
             }
         }
     }
