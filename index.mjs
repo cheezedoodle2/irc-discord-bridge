@@ -2,6 +2,7 @@ import { bot } from './util.mjs';
 // TODO dump these in a directory and find them
 import DiscordNetworkPlugin from './DiscordNetworkPlugin.mjs';
 import IRCNetworkPlugin from './IRCNetworkPlugin.mjs';
+import OpenAI from 'openai-api';
 
 function findPlugins() {
     let discordNetworkPlugin = new DiscordNetworkPlugin(bot, 'config.json');
@@ -20,3 +21,76 @@ bot.events.on(bot.eventNames.NP_CHANNEL_LIST, (pluginName, channelList) => {
 await Promise.all(findPlugins())
     .then(completeStartup)
     .catch((err) => { console.error(err); });
+
+// Create a probability distribution divided into 24 buckets, one for each hour of the day, representing the alertness level of a typical human.
+// The distribution is based on the following assumptions:
+// - The average human sleeps 8 hours per day.
+// - The average human is awake for 16 hours per day.
+// - The average human is most alert in the middle of the day.
+
+const alertnessDistribution = [
+    0.000133830225764885,
+    0.000398942280401433,
+    0.00119192985971972,
+    0.00301604782035943,
+    0.00660622784758738,
+    0.0124875042345915,
+    0.0211290298278373,
+    0.0324503268529390,
+    0.0455002638963584,
+    0.0588836265276773,
+    0.0707980333313558,
+    0.0797884560802865,
+    0.0847389587389464,
+    0.0847389587389464,
+    0.0797884560802865,
+    0.0707980333313558,
+    0.0588836265276773,
+    0.0455002638963584,
+    0.0324503268529390,
+    0.0211290298278373,
+    0.0124875042345915,
+    0.00660622784758738,
+    0.00301604782035943,
+    0.00119192985971972,
+    0.000398942280401433,
+    0.000133830225764885
+];
+
+let oai = new OpenAI(bot.config.openAIKey);
+
+function hourlyResponder() {
+    // figure out what the current hour is
+    let now = new Date();
+    let hour = now.getHours();
+
+    // get a random number between 0 and 1
+    let random = Math.random();
+    if(random < alertnessDistribution[hour]) {
+    //if(true) {
+        oai.complete({
+            engine: 'davinci',
+            prompt: 'You are awake at ' + hour + ':00',
+            maxTokens: 64,
+            temperature: 0.7,
+            topP: 1,
+            presencePenalty: 0,
+            frequencyPenalty: 0,
+            bestOf: 1,
+            n: 1,
+            stream: false,
+            stop: ['\n']
+        }).then((response) => {
+            bot.events.emit(bot.eventNames.NP_NEW_MESSAGE, 'OpenAI', 'OpenAI', 'OpenAI', response.data.choices[0].text);
+            console.log(response.data.choices[0].text);
+        }).catch((err) => {
+            console.error(err);
+        });
+
+        console.log(`You are awake at ${hour}:00`);
+    }
+
+    setTimeout(hourlyResponder, 1000 * 60 * 60);
+}
+
+hourlyResponder();
