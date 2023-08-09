@@ -2,7 +2,7 @@ import { bot } from './util.mjs';
 // TODO dump these in a directory and find them
 import DiscordNetworkPlugin from './DiscordNetworkPlugin.mjs';
 import IRCNetworkPlugin from './IRCNetworkPlugin.mjs';
-import OpenAI from 'openai-api';
+import { Configuration, OpenAIApi } from 'openai';
 
 function findPlugins() {
     let discordNetworkPlugin = new DiscordNetworkPlugin(bot, 'config.json');
@@ -57,7 +57,10 @@ const alertnessDistribution = [
     0.000133830225764885
 ];
 
-let oai = new OpenAI(bot.config.openAIKey);
+const configuration = new Configuration({
+    apiKey: bot.config.openAIKey
+});
+const openai = new OpenAIApi(configuration)
 
 function hourlyResponder() {
     // figure out what the current hour is
@@ -68,18 +71,9 @@ function hourlyResponder() {
     let random = Math.random();
     if(random < alertnessDistribution[hour]) {
     //if(true) {
-        oai.complete({
-            engine: 'davinci',
-            prompt: 'You are awake at ' + hour + ':00',
-            maxTokens: 64,
-            temperature: 0.7,
-            topP: 1,
-            presencePenalty: 0,
-            frequencyPenalty: 0,
-            bestOf: 1,
-            n: 1,
-            stream: false,
-            stop: ['\n']
+        openai.createChatCompletion({
+            model: 'gpt-3.5-turbo',
+            messages: [{role: "user", content: 'You are awake at ' + hour + ':00'}]
         }).then((response) => {
             bot.events.emit(bot.eventNames.NP_NEW_MESSAGE, 'OpenAI', 'OpenAI', 'OpenAI', response.data.choices[0].text);
             console.log(response.data.choices[0].text);
