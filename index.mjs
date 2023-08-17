@@ -72,10 +72,9 @@ function hourlyResponder() {
     if(random < alertnessDistribution[hour]) {
         openai.createChatCompletion({
             model: 'gpt-3.5-turbo',
-            messages: [{role: "user", content: 'You are awake at ' + hour + ':00'}]
+            messages: [{role: "user", content: 'You are a hungover bot who just woke up at ' + hour + ':00, and you mutter one sentence to yourself as you perform a typical activity for that time.'}]
         }).then((response) => {
-            bot.events.emit(bot.eventNames.NP_NEW_MESSAGE, 'OpenAI', 'OpenAI', 'OpenAI', response.data.choices[0].message);
-            console.log(response.data.choices[0].text);
+            bot.events.emit(bot.eventNames.NP_NEW_MESSAGE, 'OpenAI', 'OpenAI', 'OpenAI', response.data.choices[0].message.content);
         }).catch((err) => {
             console.error(err);
         });
