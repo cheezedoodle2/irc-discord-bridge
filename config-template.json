@@ -10,5 +10,11 @@
     "ircPort": "irc port",
     "ircServer": "irc.irc.net",
     "discordMessageStyleHelp": "[string] Either 'embed' for Discord embed style messages, or 'text' for a more IRC-compatible text message.",
-    "discordMessageStyle": "embed"
+    "discordMessageStyle": "embed",
+    "discordIRCUserNameMappings": [
+        {
+            "discordUserID": "123useridgoeshere",
+            "ircUserName": "ircusernamegoeshere"
+        }
+    ]
 }

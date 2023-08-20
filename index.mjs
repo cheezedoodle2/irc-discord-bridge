@@ -2,7 +2,7 @@ import { bot } from './util.mjs';
 // TODO dump these in a directory and find them
 import DiscordNetworkPlugin from './DiscordNetworkPlugin.mjs';
 import IRCNetworkPlugin from './IRCNetworkPlugin.mjs';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 
 function findPlugins() {
     let discordNetworkPlugin = new DiscordNetworkPlugin(bot, 'config.json');
@@ -57,10 +57,9 @@ const alertnessDistribution = [
     0.000133830225764885
 ];
 
-const configuration = new Configuration({
+const openai = new OpenAI({
     apiKey: bot.config.openAIKey
 });
-const openai = new OpenAIApi(configuration)
 
 function hourlyResponder() {
     // figure out what the current hour is

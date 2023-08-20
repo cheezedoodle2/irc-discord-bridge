@@ -143,6 +143,19 @@ export default class DiscordNetworkPlugin {
             message = `${this.lastEmbedMessageHandles[to].embeds[0].description}\n${message}`;
         }
 
+        // Convert any IRC style `username: ` prefixes to Discord style notifications <@username>
+        let discordIRCUserNameMappings = this.bot.config.discordIRCUserNameMappings;
+        if(discordIRCUserNameMappings) {
+            for(let mapping of discordIRCUserNameMappings) {
+                const searchKey = `${mapping.ircUserName}: `;
+                if(message.indexOf(searchKey) != 0) {
+                    continue;
+                }
+
+                message = message.replace(searchKey, `<@${mapping.discordUserID}> `);
+            }
+        }
+
         const embed = {
             "type": "rich",
             "title": `${from}`,
