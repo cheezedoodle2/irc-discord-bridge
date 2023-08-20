@@ -125,23 +125,6 @@ export default class DiscordNetworkPlugin {
     async newMessageHandler(np, from, to, message) {
         dbg(`${np} -> ${this.constructor.name}: ${from} => ${to}: ${message}`);
         let channel = this.client.channels.cache.find(channel => channel.id === this.bot.config.logChannelId);
-        
-        // Just send the text message and return, otherwise...
-        if(this.bot.config.discordMessageStyle == 'text') {
-            channel.send(`**${to}** <\`${from}\`> ${message}`);
-            return;
-        }
-
-        // Send it as an embed
-        const linkRegex = /(https?:\/\/[^\s]+)/g;
-        const links = message.match(linkRegex);
-
-        // If the sender of this message is the same as the last sender to this
-        // destination, then we can just edit the last message instead of
-        // sending a new one.
-        if(this.lastUsernames[to] == from) {
-            message = `${this.lastEmbedMessageHandles[to].embeds[0].description}\n${message}`;
-        }
 
         // Convert any IRC style `username: ` prefixes to Discord style notifications <@username>
         let discordIRCUserNameMappings = this.bot.config.discordIRCUserNameMappings;
@@ -152,8 +135,41 @@ export default class DiscordNetworkPlugin {
                     continue;
                 }
 
-                message = message.replace(searchKey, `<@${mapping.discordUserID}> `);
+                channel.send(`<@${mapping.discordUserID}>`);
             }
+        }
+
+        const linkRegex = /(https?:\/\/[^\s]+)/g;
+        const links = message.match(linkRegex);
+
+        // See if we had any matches, and if so, remove the trackers
+        let bare_urls = [];
+        if(links) {
+            for(let link of links) {
+                let bare_url = link;
+
+                try {
+                    bare_url = TrackerRemover.removeTrackersFromUrl(link);
+                }
+                catch(error) {
+                    console.error(`Something went wrong removing trackers from URL:\n  link: ${link}\n  bare_url: ${bare_url}\n${error}`);
+                }
+                bare_urls.push(bare_url);
+            }
+        }
+        // If we're in text mode, send the text message and return, otherwise...
+        if(this.bot.config.discordMessageStyle == 'text') {
+            channel.send(`**${to}** <\`${from}\`> ${message}`);
+            return;
+        }
+
+        // We're in embed mode.
+
+        // If the sender of this message is the same as the last sender to this
+        // destination, then we can just edit the last message instead of
+        // sending a new one.
+        if(this.lastUsernames[to] == from) {
+            message = `${this.lastEmbedMessageHandles[to].embeds[0].description}\n${message}`;
         }
 
         const embed = {
@@ -168,25 +184,19 @@ export default class DiscordNetworkPlugin {
 
         let messageHandle = null;
         if(this.lastUsernames[to] == from) {
+            // Edit the last embed if it's from the same user.
             this.lastEmbedMessageHandles[to].edit({embeds: [embed]});
         }
         else {
+            // Send a new embed if it's from a different user.
             messageHandle = await channel.send({embeds: [embed]});
             this.lastEmbedMessageHandles[to] = messageHandle;
         }
         this.lastUsernames[to] = from;
 
-        // See if we had any matches, and if so, remove the trackers
-        if(links) {
-            for(let link of links) {
-                let bare_url = link;
-
-                try {
-                    bare_url = TrackerRemover.removeTrackersFromUrl(link);
-                }
-                catch(error) {
-                    console.error(`Something went wrong removing trackers from URL:\n  link: ${link}\n  bare_url: ${bare_url}\n${error}`);
-                }
+        // Send any links we found, so they get a preview.
+        if(bare_urls.length > 0) {
+            for(let bare_url of bare_urls) {
                 channel.send(`${from} ${bare_url}`);
             }
         }
